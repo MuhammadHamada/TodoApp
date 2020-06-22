@@ -128,9 +128,9 @@
                     checkbox.type = "checkbox";
                     checkbox.class="check-completed";
                     
-
-                    li.innerText = jsonResponse['description'];
                     li.appendChild(checkbox);
+                    li.innerText = jsonResponse['description'];
+                    
                     
                     
                     document.getElementById('todos').appendChild(li);
