@@ -28,6 +28,11 @@
                 font-size: 20px;
             }
 
+            .lists-wrapper, .todos-wrapper {
+                display: inline-block;
+                vertical-align: top;
+            }
+
             .check-completed {
                 float: left;
             }
@@ -35,46 +40,72 @@
         </style>
     </head>
     <body>
-        <form id="form" method="post" action="/todos/create">
-            <input type="text" id="description" name="description" />
-            <input type="submit" value="Create" />
-        </form>
-        <div id="error" class="hidden">Something went wrong!</div>
-        <ul id="todos">
-            {% for d in data %}
-            <li class="todo-item">
-                <input class="check-completed" data-id="{{ d.id }}" 
-                type="checkbox"{% if d.completed %} checked {% endif %}/> 
-                {{d.description}}
-                <button data-id="{{ d.id }}" class="remove-button">&cross;</button>
-            </li>
-            {% endfor %}
-        </ul>
+        <div class="lists-wrapper">
+
+            <form id="list-form" method="post" action="/todos/create">
+                <input type="text" id="list-description" name="description" />
+                <input type="submit" value="Create List" />
+            </form>
+            <h4>Todo Lists</h4>
+            <div id="error" class="hidden">Something went wrong!</div>
+            <ul id="lists">
+                    {% for list in lists %}
+                    <li class="list-item">
+                        <input class="check-completed" data-id="{{ list.id }}" 
+                        type="checkbox"{% if list.completed %} checked {% endif %}/>
+                        <a href="/lists/{{ list.id }}">
+                        {{list.name}}
+                        </a>
+                        <button data-id="{{ list.id }}" class="remove-button">&cross;</button>
+                    </li>
+                    {% endfor %}
+            </ul>
+
+        </div>
+
+        <div class="todos-wrapper">
+            <form id="todo-form" method="post" action="/todos/create">
+                <input type="text" id="todo-description" name="description" />
+                <input type="submit" value="Create Task" />
+            </form>
+            <h4>{{ active_list.name }}</h4>
+            <div id="error" class="hidden">Something went wrong!</div>
+            <ul id="todos">
+                {% for todo in todos %}
+                <li class="todo-item">
+                    <input class="check-completed" data-id="{{ todo.id }}" 
+                    type="checkbox"{% if todo.completed %} checked {% endif %}/> 
+                    {{todo.description}}
+                    <button data-id="{{ todo.id }}" class="remove-button">&cross;</button>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
         <script>
-                function handleRemoveButton(e){
-                    console.log('event', e);
-                    const todoId = e.target.dataset['id'];
-                    fetch('/todos/' + todoId, {
-                        method: 'DELETE',
-                        body: JSON.stringify({
-                            'id': todoId,
-                        }),
-                        headers: {
-                            'Content-Type': 'application/json',
-                        }
-                    })
-                    .then(function(response){
-                        return response.json();
-                    })
-                    .then(function(jsonResponse) {
-                        console.log('response', jsonResponse);
-                        const item = e.target.parentElement;
-                        item.remove();
-                        document.getElementById('error').className = 'hidden';
-                    })
-                    .catch(function() {
-                        document.getElementById('error').className = '';
-                    })
+            function handleRemoveButton(e){
+                console.log('event', e);
+                const todoId = e.target.dataset['id'];
+                fetch('/todos/' + todoId, {
+                    method: 'DELETE',
+                    body: JSON.stringify({
+                        'id': todoId,
+                    }),
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(function(response){
+                    return response.json();
+                })
+                .then(function(jsonResponse) {
+                    console.log('response', jsonResponse);
+                    const item = e.target.parentElement;
+                    item.remove();
+                    document.getElementById('error').className = 'hidden';
+                })
+                .catch(function() {
+                    document.getElementById('error').className = '';
+                })
             }
 
             const removebuttons = document.querySelectorAll('.remove-button');
@@ -109,13 +140,13 @@
                     })
                 }
             }
-            
-            document.getElementById("form").onsubmit = function(e) {
+
+            function handleCreate(e, path, desc, isList) {
                 e.preventDefault();
-                fetch('/todos/create', {
+                fetch(path, {
                     method: 'POST',
                     body: JSON.stringify({
-                        'description': document.getElementById("description").value,
+                        'description': desc,
                         'list_id': 1,
                         //TODO : Change the default 'list_id'
                     }),
@@ -131,7 +162,7 @@
 
                     li = document.createElement('li');
                     var attr_class = document.createAttribute("class");
-                    attr_class.value = "todo-item";
+                    attr_class.value = (isList ? "list-item":"todo-item");
                     li.setAttributeNode(attr_class);
 
                     checkbox = document.createElement('input');
@@ -163,14 +194,31 @@
 
                     li.appendChild(removeButton);
                     
-                    
-                    document.getElementById('todos').appendChild(li);
-                    document.getElementById('error').className = 'hidden';
+                    if(isList) {
+                        document.getElementById('lists').appendChild(li);
+                        document.getElementById("list-description").value = "";
+                        document.getElementById('error').className = 'hidden';
+                    }else { 
+                        document.getElementById('todos').appendChild(li);
+                        document.getElementById("todo-description").value = "";
+                        document.getElementById('error').className = 'hidden';
+                    }
                 })
                 .catch(function() {
                     document.getElementById('error').className = '';
                 })
             }
+        
+            document.getElementById("todo-form").onsubmit = function(e) {
+                var dsc = document.getElementById("todo-description").value; 
+                handleCreate(e, '/todos/create', dsc, false);
+            }
+
+            document.getElementById("list-form").onsubmit = function(e) {
+                var dsc = document.getElementById("list-description").value; 
+                handleCreate(e, '/lists/create', dsc, true);
+            }
+
         </script>
     </body>
 </html>
