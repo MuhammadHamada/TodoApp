@@ -17,7 +17,7 @@ class Todo(db.Model):
     list_id = db.Column(db.Integer, db.ForeignKey('todolists.id'), nullable=False)
 
     def __repr__(self):
-        return f'<Todo ID: {self.id}, description: {self.description}>'
+        return f'<Todo ID: {self.id}, description: {self.description}, completed:{self.completed}>'
 
 class TodoList(db.Model):
     __tablename__ = "todolists"
@@ -73,7 +73,7 @@ def create_todolist():
     return jsonify(body)
 
 
-@app.route('/todos/<todo_id>/set-completed', methods=['POST'])
+@app.route('/todos/set-completed-todo/<todo_id>', methods=['POST'])
 def set_completed_todo(todo_id):
   try:
     completed = request.get_json()['completed']
@@ -86,6 +86,29 @@ def set_completed_todo(todo_id):
   finally:
     db.session.close()
   return redirect(url_for('index'))
+
+@app.route('/lists/set-completed-list/<list_id>', methods=['POST'])
+def set_completed_todolist(list_id):
+  try:
+    completed = request.get_json()['completed']
+    print('completed', completed)
+    todolist = TodoList.query.get(list_id)
+    todolist.completed = completed
+
+    todos = todolist.todos
+    print(todos)
+    for t in todos:
+      t.completed = completed
+    print(todos)
+
+    db.session.commit()
+  except:
+    db.session.rollback()
+  finally:
+    db.session.close()
+  return redirect(url_for('index'))
+
+
 
 @app.route('/todos/<todo_id>', methods=['DELETE'])
 def delete_todo_item(todo_id):
@@ -112,7 +135,7 @@ def delete_todo_item(todo_id):
 @app.route('/lists/<list_id>')
 def get_list_todos(list_id):
     return render_template('index.html', 
-    lists=TodoList.query.all(),
+    lists=TodoList.query.order_by('id').all(),
     active_list=TodoList.query.get(list_id),
     todos=Todo.query.filter_by(list_id=list_id).order_by('id').all())
 

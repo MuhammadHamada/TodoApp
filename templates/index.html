@@ -33,7 +33,12 @@
                 vertical-align: top;
             }
 
-            .check-completed {
+            .check-completed-list {
+                float: left;
+            }
+
+
+            .check-completed-todo {
                 float: left;
             }
 
@@ -51,7 +56,7 @@
             <ul id="lists">
                     {% for list in lists %}
                     <li class="list-item">
-                        <input class="check-completed" data-id="{{ list.id }}" 
+                        <input class="check-completed-list" data-id="{{ list.id }}" 
                         type="checkbox"{% if list.completed %} checked {% endif %}/>
                         <a href="/lists/{{ list.id }}">
                         {{list.name}}
@@ -74,7 +79,7 @@
             <ul id="todos">
                 {% for todo in todos %}
                 <li class="todo-item">
-                    <input class="check-completed" data-id="{{ todo.id }}" 
+                    <input class="check-completed-todo" data-id="{{ todo.id }}" 
                     type="checkbox"{% if todo.completed %} checked {% endif %}/> 
                     {{todo.description}}
                     <button data-id="{{ todo.id }}" class="remove-button">&cross;</button>
@@ -109,6 +114,29 @@
                 })
             }
 
+            function handleCheckbox(e, path) {
+
+                console.log('event', e);
+                const newCompleted = e.target.checked;
+                const targetId = e.target.dataset['id'];
+                fetch(path + targetId, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        'completed': newCompleted,
+                    }),
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(function(jsonResponse) {
+                    document.getElementById('error').className = 'hidden';
+                })
+                .catch(function() {
+                    document.getElementById('error').className = '';
+                })
+
+            }
+
             const removebuttons = document.querySelectorAll('.remove-button');
             for (let i = 0; i < removebuttons.length; i++) {
                 const removebutton = removebuttons[i];
@@ -117,28 +145,19 @@
                 };
             }
 
-            const checkboxs = document.querySelectorAll('.check-completed');
-            for (let i = 0; i < checkboxs.length; i++) {
-                const checkbox = checkboxs[i];
+            const checkboxs_todo = document.querySelectorAll('.check-completed-todo');
+            for (let i = 0; i < checkboxs_todo.length; i++) {
+                const checkbox = checkboxs_todo[i];
                 checkbox.onchange = function(e) {
-                    console.log('event', e);
-                    const newCompleted = e.target.checked;
-                    const todoId = e.target.dataset['id'];
-                    fetch('/todos/' + todoId + '/set-completed', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            'completed': newCompleted,
-                        }),
-                        headers: {
-                            'Content-Type': 'application/json',
-                        }
-                    })
-                    .then(function(jsonResponse) {
-                        document.getElementById('error').className = 'hidden';
-                    })
-                    .catch(function() {
-                        document.getElementById('error').className = '';
-                    })
+                    handleCheckbox(e,'/todos/set-completed-todo/');
+                }
+            }
+
+            const checkboxs_list = document.querySelectorAll('.check-completed-list');
+            for (let i = 0; i < checkboxs_list.length; i++) {
+                const checkbox = checkboxs_list[i];
+                checkbox.onchange = function(e) {
+                    handleCheckbox(e,'/lists/set-completed-list/');
                 }
             }
 
