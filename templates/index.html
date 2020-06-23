@@ -67,6 +67,7 @@
             <form id="todo-form" method="post" action="/todos/create">
                 <input type="text" id="todo-description" name="description" />
                 <input type="submit" value="Create Task" />
+                <input id="active_list" type="hidden" value="{{active_list.id}}"/>
             </form>
             <h4>{{ active_list.name }}</h4>
             <div id="error" class="hidden">Something went wrong!</div>
@@ -147,8 +148,7 @@
                     method: 'POST',
                     body: JSON.stringify({
                         'description': desc,
-                        'list_id': 1,
-                        //TODO : Change the default 'list_id'
+                        'list_id': Number(document.getElementById("active_list").value),
                     }),
                     headers: {
                         'Content-Type': 'application/json',
@@ -186,11 +186,11 @@
                     removeButton.innerHTML = '&cross;';
                     removeButton.className = "remove-button";
 
-                    /*
-                    removebutton.onclick = function(e) {
+                    
+                    removeButton.onclick = function(e) {
                         handleRemoveButton(e);
                     };
-                    */
+                    
 
                     li.appendChild(removeButton);
                     
