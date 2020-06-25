@@ -61,7 +61,7 @@
                         <a href="/lists/{{ list.id }}">
                         {{list.name}}
                         </a>
-                        <button data-id="{{ list.id }}" class="remove-button">&cross;</button>
+                        <button data-id="{{ list.id }}" class="remove-button-list">&cross;</button>
                     </li>
                     {% endfor %}
             </ul>
@@ -82,19 +82,19 @@
                     <input class="check-completed-todo" data-id="{{ todo.id }}" 
                     type="checkbox"{% if todo.completed %} checked {% endif %}/> 
                     {{todo.description}}
-                    <button data-id="{{ todo.id }}" class="remove-button">&cross;</button>
+                    <button data-id="{{ todo.id }}" class="remove-button-todo">&cross;</button>
                 </li>
                 {% endfor %}
             </ul>
         </div>
         <script>
-            function handleRemoveButton(e){
+            function handleRemoveButton(e, path, isList){
                 console.log('event', e);
-                const todoId = e.target.dataset['id'];
-                fetch('/todos/' + todoId, {
+                const targetId = e.target.dataset['id'];
+                fetch(path + targetId, {
                     method: 'DELETE',
                     body: JSON.stringify({
-                        'id': todoId,
+                        'id': targetId,
                     }),
                     headers: {
                         'Content-Type': 'application/json',
@@ -107,6 +107,9 @@
                     console.log('response', jsonResponse);
                     const item = e.target.parentElement;
                     item.remove();
+                    if(isList){
+                        window.location.replace('/');
+                    }
                     document.getElementById('error').className = 'hidden';
                 })
                 .catch(function() {
@@ -114,7 +117,7 @@
                 })
             }
 
-            function handleCheckbox(e, path) {
+            function handleCheckbox(e, path, isList) {
 
                 console.log('event', e);
                 const newCompleted = e.target.checked;
@@ -129,6 +132,13 @@
                     }
                 })
                 .then(function(jsonResponse) {
+                    if(targetId == Number(document.getElementById("active_list").value)) {
+                        const checkboxs_todo = document.querySelectorAll('.check-completed-todo');
+                        for (let i = 0; i < checkboxs_todo.length; i++) {
+                            const checkbox = checkboxs_todo[i];
+                            checkbox.checked = newCompleted;
+                        }
+                    }
                     document.getElementById('error').className = 'hidden';
                 })
                 .catch(function() {
@@ -137,11 +147,19 @@
 
             }
 
-            const removebuttons = document.querySelectorAll('.remove-button');
-            for (let i = 0; i < removebuttons.length; i++) {
-                const removebutton = removebuttons[i];
+            const removebuttonsTodo = document.querySelectorAll('.remove-button-todo');
+            for (let i = 0; i < removebuttonsTodo.length; i++) {
+                const removebutton = removebuttonsTodo[i];
                 removebutton.onclick = function(e) {
-                    handleRemoveButton(e);
+                    handleRemoveButton(e,'/todos/',false);
+                };
+            }
+
+            const removebuttonsList = document.querySelectorAll('.remove-button-list');
+            for (let i = 0; i < removebuttonsList.length; i++) {
+                const removebutton = removebuttonsList[i];
+                removebutton.onclick = function(e) {
+                    handleRemoveButton(e,'/lists/',true);
                 };
             }
 
@@ -149,7 +167,7 @@
             for (let i = 0; i < checkboxs_todo.length; i++) {
                 const checkbox = checkboxs_todo[i];
                 checkbox.onchange = function(e) {
-                    handleCheckbox(e,'/todos/set-completed-todo/');
+                    handleCheckbox(e,'/todos/set-completed-todo/', false);
                 }
             }
 
@@ -157,7 +175,7 @@
             for (let i = 0; i < checkboxs_list.length; i++) {
                 const checkbox = checkboxs_list[i];
                 checkbox.onchange = function(e) {
-                    handleCheckbox(e,'/lists/set-completed-list/');
+                    handleCheckbox(e,'/lists/set-completed-list/', true);
                 }
             }
 
@@ -192,10 +210,23 @@
                     checkbox.setAttributeNode(attr_dataId);
                     li.appendChild(checkbox);
                     
-                    //Create the text node after the the checkbox
-                    var text = document.createTextNode(jsonResponse['description']);
-                    //Append the text node to the <li>
-                    li.appendChild(text);
+                    if(isList) {
+
+                        a = document.createElement('a');
+                        a.href = "/lists/" + jsonResponse['id'];
+                        a.innerHTML = jsonResponse['description'];
+                        li.appendChild(a);
+
+                    }
+                    else {
+
+                        //Create the text node after the the checkbox
+                        var text = document.createTextNode(jsonResponse['description']);
+                        //Append the text node to the <li>
+                        li.appendChild(text);
+
+                    }
+
 
                     
                     removeButton = document.createElement('Button');
@@ -207,7 +238,7 @@
 
                     
                     removeButton.onclick = function(e) {
-                        handleRemoveButton(e);
+                        handleRemoveButton(e, (isList ? "/lists/":"/todos/"),isList);
                     };
                     
 

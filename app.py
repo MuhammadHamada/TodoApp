@@ -24,7 +24,7 @@ class TodoList(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(), nullable=False)
     completed = db.Column(db.Boolean, nullable=False, default=False)
-    todos = db.relationship('Todo', backref='list', lazy=True)
+    todos = db.relationship('Todo', backref='list', lazy=True, cascade="all, delete")
 
 
 @app.route('/todos/create', methods = ['POST'])
@@ -92,10 +92,10 @@ def set_completed_todolist(list_id):
   try:
     completed = request.get_json()['completed']
     print('completed', completed)
-    todolist = TodoList.query.get(list_id)
-    todolist.completed = completed
+    _list = TodoList.query.get(list_id)
+    _list.completed = completed
 
-    todos = todolist.todos
+    todos = _list.todos
     print(todos)
     for t in todos:
       t.completed = completed
@@ -118,6 +118,26 @@ def delete_todo_item(todo_id):
     id = request.get_json()['id']
     todo = Todo.query.get(id)
     db.session.delete(todo)
+    db.session.commit()
+    body['id'] = id
+  except:
+    error = True
+    db.session.rollback()
+  finally:
+    db.session.close()
+  if error:
+    abort (400)
+  else:
+    return jsonify(body)
+
+@app.route('/lists/<list_id>', methods=['DELETE'])
+def delete_list_item(list_id):
+  error = False
+  body = {}
+  try:
+    id = request.get_json()['id']
+    todolist = TodoList.query.get(id)
+    db.session.delete(todolist)
     db.session.commit()
     body['id'] = id
   except:
